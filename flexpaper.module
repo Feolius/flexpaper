@@ -1,0 +1,188 @@
+<?php
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function flexpaper_field_formatter_info() {
+  return array(
+    'flexpaper_formatter' => array(
+      'label' => t('Flexpaper formatter'),
+      'field types' => array('file'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  global $base_url;
+  $element = array();
+//  if ($display['type'] == 'book_field_formatter') {
+//    foreach ($items as $delta => $item) {
+//
+//      //If swf files was created, we should show it in flexpaper.
+//      if ($item['conversion_done'] != 0) {
+//        $module_path = drupal_get_path('module', 'flexpaper');
+//        $FlexPaperViewerPath = $base_url . '/' . $module_path . '/FlexPaperViewer';
+//        $file = file_load($item['fid']);
+//        $file_name = get_real_file_name($file);
+//        $swf_directory = file_default_scheme() . '://books/' . $item['folder_name'];
+//        $path = drupal_realpath($swf_directory);
+//        $drupal_folder = realpath('.');
+//        $relative_path = str_replace($drupal_folder, "", $path);
+//        $files = scandir($path);
+//        if (isset($item['fid_thumb'])) {
+//          $num_of_swfs = count($files) - 4;
+//        }
+//        else {
+//          $num_of_swfs = count($files) - 3;
+//        }
+//
+//        $swf_path = '{' . $base_url . $relative_path . '/' . $file_name . '[*,0].swf,' . $num_of_swfs . '}';
+//
+//        $settings = array(
+//          'paths' => array($swf_path),
+//          'FlexPaperViewerPath' => $FlexPaperViewerPath,
+//        );
+//
+//        //Determine if we need highlighting
+//        if (isset($_GET['query'])) {
+//          $query = $_GET['query'];
+//          $query_parts = explode(' AND ', $query);
+//          foreach ($query_parts as $query_part) {
+//            $query_part_arr = explode(':', $query_part);
+//            if (count($query_part_arr) == 1) {
+//              $main_query = $query_part_arr[0];
+//            }
+//          }
+//        }
+//        //Add buttons that allow to jump by terms
+//        $buttons = array();
+//        if (!empty($main_query)) {
+//          if (substr($main_query, 0, 1) == '"' && substr($main_query, -1) == '"') {
+//            //We need only one button if user want to see the whole string
+//            $main_query = substr($main_query, 1);
+//            $main_query = substr($main_query, 0, -1);
+//            $settings['search'] = $main_query;
+//          }
+//          else {
+//            //We should divide string and make button for each word
+//            $terms = explode(' ', $main_query);
+//            if (count($terms) > 1) {
+//              foreach ($terms as $term) {
+//                $buttons[$term . '_button'] = array(
+//                  '#type' => 'button',
+//                  '#value' => $term,
+//                  '#attributes' => array(
+//                    'class' => array('flexpaper-highlight-button')
+//                  )
+//                );
+//              }
+//            }
+//          }
+//          $buttons['search_string_button'] = array(
+//            '#type' => 'button',
+//            '#value' => $main_query,
+//            '#attributes' => array(
+//              'class' => array('flexpaper-highlight-button')
+//            )
+//          );
+//          $settings['search'] = $main_query;
+//        }
+//        $element[$delta] = array(
+//          'flexpaper' => array(
+//            '#attached' => array(
+//              'css' => array($module_path . '/flexpaper.css'),
+//              'js' => array($module_path . '/flexpaper_flash.js', $module_path . '/flexpaper.js'),
+//            ),
+//            '#theme' => 'flexpaper_view',
+//            '#file' => $file,
+//          )
+//        );
+//        if (module_exists('book_thumbnail') && ($file_thumb = file_load($item['fid_thumb']))) {
+//          $element[$delta]['flexpaper']['#file_thumb'] = $file_thumb;
+//        }
+//        $element[$delta] = array_merge($buttons, $element[$delta]);
+//        drupal_add_js(array('flexpaper' => $settings), 'setting');
+//      }
+//      elseif ($item['fid'] != 0) {
+//        $file = file_load($item['fid']);
+//        if (module_exists('book_thumbnail') && ($file_thumb = file_load($item['fid_thumb']))) {
+//          $element[$delta]['#file_thumb'] = $file_thumb;
+//        }
+//        $element[$delta] = array(
+//          '#theme' => 'flexpaper_google_doc_view',
+//          '#file' => $file,
+//        );
+//      }
+//    }
+//  }
+  return $element;
+}
+
+/**
+ * Remove special characters that prevent flexpaper work
+ */
+function _flexpaper_remove_special_chars($string) {
+  $string = str_replace('?', '', $string);
+  $string = str_replace('#', '', $string);
+  $string = str_replace('&', '', $string);
+  return $string;
+}
+
+
+/**
+ * Implements hook_theme().
+ */
+function flexpaper_theme() {
+  return array(
+    'flexpaper_view' => array(
+      'variables' => array('file' => NULL, 'file_swf' => NULL, 'file_thumb' => NULL, 'icon_directory' => NULL),
+    ),
+    'flexpaper_google_doc_view' => array(
+      'variables' => array('file' => NULL, 'file_thumb' => NULL, 'icon_directory' => NULL),
+    ),
+  );
+}
+
+/**
+ * Theme function for the flexpaper formatter.
+ */
+function theme_flexpaper_view($variables) {
+  $file = (object) $variables['file'];
+  $file_thumb = (object) $variables['file_thumb'];
+  $out = '<p class = "viewerPlaceHolder">Document loading..</p>';
+  if (!empty($file_thumb)) {
+    $uri = $file->uri;
+    $uri_thumb = $file_thumb->uri;
+    $style = 'compressing';
+    $text = '<img src="' . image_style_url($style, $uri_thumb) . '">';
+    $options['html'] = TRUE;
+    $out = $out . '<h1>' . $file->filename . '</h1>' . l($text, file_create_url($uri), $options);
+  }
+  else {
+    $out = $out . theme_file_link($variables);
+  }
+  return $out;
+}
+
+/**
+ * Get real file name without suffix
+ */
+function get_real_file_name($file) {
+  $uri = $file->uri;
+  $real_file_name = drupal_basename($uri);
+
+  $arr = explode('.', $real_file_name);
+  $arr_length = count($arr);
+  if ($arr_length > 1) {
+    //Exclude name of file extension
+    unset($arr[$arr_length - 1]);
+    $real_file_name = implode('.', $arr);
+  }
+  else {
+    $real_file_name = $arr[0];
+  }
+  return $real_file_name;
+}
