@@ -3,3 +3,4 @@ description = "Provides a flexpaper formatter for the file fields."
 package = Flexpaper
 core = 7.x
 dependencies[] = libraries
+dependencies[] = file
