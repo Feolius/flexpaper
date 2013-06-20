@@ -186,3 +186,51 @@ function get_real_file_name($file) {
   }
   return $real_file_name;
 }
+
+//Create swf files in temporary folder
+function _flexpaper_create_swf($file, $folder_name, $conversion_pid) {
+  $path = drupal_realpath($file->uri);
+  $swf_folder_path = file_directory_temp() . '/' . $folder_name;
+  //Write record in record table with id of conversion progress
+  $record = array('pid' => $conversion_pid, 'progress' => '-1');
+  drupal_write_record('progress', $record);
+
+  //Get number of pages
+  $numberOfPages = getNumPagesPdf($path);
+
+  //Execute command in pipe to reviewing current progress of conversion
+  $command = "pdf2swf '" . $path . "' -o '" . $swf_folder_path . "/" . $folder_name . "%.swf' -f -T 9 -t -s storeallcharacters";
+  $handle = popen($command, 'r');
+
+  //Try to make conversion
+  $conversion_done = 1;
+  while (!feof($handle)) {
+
+    //Check current state every 2 seconds
+    sleep(2);
+    $read = fread($handle, 2096);
+
+    $pattern = '/(FATAL|ERROR)/i';
+    preg_match($pattern, $read, $m);
+    if (!empty($m)) {
+      drupal_set_message(t("Conversion process was failed. Log info:") . $read, 'error');
+      return FALSE;
+    }
+
+    //Get current page and write serialized string with current progress in db.
+    $pattern = '/page\s(\d+)/';
+    preg_match($pattern, $read, $m);
+    if (!empty($m[1])) {
+      $record = array('pid' => $conversion_pid, 'progress' => $m[1] . '/' . $numberOfPages);
+      drupal_write_record('progress', $record, 'pid');
+    }
+  }
+  pclose($handle);
+  drupal_set_message(t("Conversion was succesfully completed"), 'status');
+
+  //Remove record from progress table
+  $delete = db_delete('progress')
+    ->condition('pid', $conversion_pid)
+    ->execute();
+  return TRUE;
+}
