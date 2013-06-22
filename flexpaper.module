@@ -59,14 +59,14 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
   global $base_url;
   $element = array();
   if($display['type'] == 'flexpaper_formatter'){
-    //@TODO check if flexpaper can work with multivalues
-    $fids = array();
+    $files = array();
     foreach ($items as $delta => $item) {
-      $fids[] = $item['fid'];
-
+      if($file = file_load($item['fid'])){
+        $files[] = $file;
+      }
     }
     //Check if all files have corresponding swfs
-    $status = flexpaper_check_files_status($fids);
+    $status = flexpaper_check_files_status($files);
     foreach ($status as $fid => $conversion_done) {
       if($conversion_done){
         //@TODO Show flexpaper instance here
@@ -181,18 +181,29 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
 /**
  * Check if each file with fid from given array has corresponding swf files
  */
-function flexpaper_check_files_status($fids){
+function flexpaper_check_files_status($files){
   $status = array();
   $batch = array(
     'title' => t('Generating swf files'),
     'operations' => array()
   );
-  foreach($fids as $fid){
-    $status['fid'] = TRUE;
-    $files_directory = 'public://flexpaper/' . $fid . '_files';
-    if (!file_prepare_directory($files_directory)) {
-      $status['fid'] = FALSE;
-      $batch['operations'][] = array('flexpaper_generate_swfs_batch_process', array($fid));
+  foreach($files as $file){
+    if ($file->filemime = 'application/pdf'){
+      $files_directory = 'public://flexpaper/' . $file->fid . '_files';
+      if (!file_prepare_directory($files_directory)) {
+        $status[$file->fid] = FALSE;
+        $batch['operations'][] = array('flexpaper_generate_swfs_batch_process', array($file));
+      }else{
+        $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
+        $files_arr = scandir(drupal_realpath($files_directory));
+        if((count($files_arr) - 2) == ($pages_number + 1)){
+          $status[$file->fid] = TRUE;
+        }else{
+          $status[$file->fid] = FALSE;
+        }
+      }
+    }else{
+      $status[$file->fid] = FALSE;
     }
   }
   if (count($batch['operations']) > 0 && user_access('generate swf files'))  {
@@ -205,12 +216,11 @@ function flexpaper_check_files_status($fids){
 /**
  * Flexpaper processor - Batch API process callback.
  */
-function flexpaper_generate_swfs_batch_process($fid, &$context){
-  $file = file_load($fid);
+function flexpaper_generate_swfs_batch_process($file, &$context){
+  $fid = $file->fid;
   $pdf_path = drupal_realpath($file->uri);
   $files_directory = 'public://flexpaper/' . $fid . '_files';
   $files_directory = drupal_realpath($files_directory);
-
   if(empty($context['sandbox'])){
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
@@ -218,9 +228,6 @@ function flexpaper_generate_swfs_batch_process($fid, &$context){
     $context['sandbox']['error'] = FALSE;
     file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
   }
-
-
-  //Execute command in pipe to reviewing current progress of conversion. We will generate 5 files per one command execution
   //@TODO Check if PHP can execute commands
   if(!$context['sandbox']['last_swf']){
     $first_page_number = $context['sandbox']['progress'] + 1;
@@ -233,12 +240,10 @@ function flexpaper_generate_swfs_batch_process($fid, &$context){
       //Error in conversion
       //@TODO check how batch API can handle the errors
       $context['sandbox']['error'] = TRUE;
-      file_unmanaged_delete_recursive($files_directory);
     }else{
       $context['sandbox']['progress'] = $last_page_number;
     }
   }
-  //kpr('');
   if(!$context['sandbox']['error']){
     if($context['sandbox']['progress'] < $context['sandbox']['max'] - 1){
       $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
@@ -323,54 +328,6 @@ function get_real_file_name($file) {
     $real_file_name = $arr[0];
   }
   return $real_file_name;
-}
-
-//Create swf files in temporary folder
-function _flexpaper_create_swf($file, $folder_name, $conversion_pid) {
-  $path = drupal_realpath($file->uri);
-  $swf_folder_path = file_directory_temp() . '/' . $folder_name;
-  //Write record in record table with id of conversion progress
-  $record = array('pid' => $conversion_pid, 'progress' => '-1');
-  drupal_write_record('progress', $record);
-
-  //Get number of pages
-  $numberOfPages = getNumPagesPdf($path);
-
-  //Execute command in pipe to reviewing current progress of conversion
-  $command = "pdf2swf '" . $path . "' -o '" . $swf_folder_path . "/" . $folder_name . "%.swf' -f -T 9 -t -s storeallcharacters";
-  $handle = popen($command, 'r');
-
-  //Try to make conversion
-  $conversion_done = 1;
-  while (!feof($handle)) {
-
-    //Check current state every 2 seconds
-    sleep(2);
-    $read = fread($handle, 2096);
-
-    $pattern = '/(FATAL|ERROR)/i';
-    preg_match($pattern, $read, $m);
-    if (!empty($m)) {
-      drupal_set_message(t("Conversion process was failed. Log info:") . $read, 'error');
-      return FALSE;
-    }
-
-    //Get current page and write serialized string with current progress in db.
-    $pattern = '/page\s(\d+)/';
-    preg_match($pattern, $read, $m);
-    if (!empty($m[1])) {
-      $record = array('pid' => $conversion_pid, 'progress' => $m[1] . '/' . $numberOfPages);
-      drupal_write_record('progress', $record, 'pid');
-    }
-  }
-  pclose($handle);
-  drupal_set_message(t("Conversion was succesfully completed"), 'status');
-
-  //Remove record from progress table
-  $delete = db_delete('progress')
-    ->condition('pid', $conversion_pid)
-    ->execute();
-  return TRUE;
 }
 
 /**
