@@ -4,3 +4,4 @@ package = Flexpaper
 core = 7.x
 dependencies[] = libraries
 dependencies[] = file
+configure = admin/config/flexpaper
