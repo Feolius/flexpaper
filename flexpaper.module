@@ -1,13 +1,28 @@
 <?php
 
 /**
+ * Implements hook_permission().
+ */
+function flexpaper_permission() {
+  return array(
+    'generate swf files' => array(
+      'title' => t('Generate swf files'),
+      'description' => t(' Generate swf files from pdf.'),
+    ),
+  );
+}
+
+/**
  * Implements hook_field_formatter_info().
  */
 function flexpaper_field_formatter_info() {
+  //@TODO We need to add settings here
   return array(
     'flexpaper_formatter' => array(
       'label' => t('Flexpaper formatter'),
+      'descrition' => 'Provides a way to show pdf files using flexpaper',
       'field types' => array('file'),
+      'settings' => array()
     ),
   );
 }
@@ -18,6 +33,23 @@ function flexpaper_field_formatter_info() {
 function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   global $base_url;
   $element = array();
+  if($display['type'] == 'flexpaper_formatter'){
+    //@TODO check if flexpaper can work with multivalues
+    $fids = array();
+    foreach ($items as $delta => $item) {
+      $fids[] = $item['fid'];
+
+    }
+    //Check if all files have corresponding swfs
+    $status = flexpaper_check_files_status($fids);
+    foreach ($status as $fid => $conversion_done) {
+      if($conversion_done){
+        //@TODO Show flexpaper instance here
+      }else{
+        //@TODO Show file link or smth else
+      }
+    }
+  }
 //  if ($display['type'] == 'book_field_formatter') {
 //    foreach ($items as $delta => $item) {
 //
@@ -119,6 +151,87 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
 //    }
 //  }
   return $element;
+}
+
+/**
+ * Check if each file with fid from given array has corresponding swf files
+ */
+function flexpaper_check_files_status($fids){
+  $status = array();
+  $batch = array(
+    'title' => t('Generating swf files'),
+    'operations' => array()
+  );
+  foreach($fids as $fid){
+    $status['fid'] = TRUE;
+    $files_directory = 'public://flexpaper/' . $fid . '_files';
+    if (!file_prepare_directory($files_directory)) {
+      $status['fid'] = FALSE;
+      $batch['operations'][] = array('flexpaper_generate_swfs_batch_process', array($fid));
+    }
+  }
+  if (count($batch['operations']) > 0 && user_access('generate swf files'))  {
+    batch_set($batch);
+    batch_process();
+  }
+  return $status;
+}
+
+/**
+ * Flexpaper processor - Batch API process callback.
+ */
+function flexpaper_generate_swfs_batch_process($fid, &$context){
+  $file = file_load($fid);
+  $pdf_path = drupal_realpath($file->uri);
+  $files_directory = 'public://flexpaper/' . $fid . '_files';
+  $files_directory = drupal_realpath($files_directory);
+
+  if(empty($context['sandbox'])){
+    $context['sandbox']['progress'] = 0;
+    $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
+    $context['sandbox']['last_swf'] = FALSE;
+    $context['sandbox']['error'] = FALSE;
+    file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
+  }
+
+
+  //Execute command in pipe to reviewing current progress of conversion. We will generate 5 files per one command execution
+  //@TODO Check if PHP can execute commands
+  if(!$context['sandbox']['last_swf']){
+    $first_page_number = $context['sandbox']['progress'] + 1;
+    $last_page_number = $context['sandbox']['progress'] + 5;
+    $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
+    $output = shell_exec(($command));
+    $pattern = '/(FATAL|ERROR)/i';
+    preg_match($pattern, $output, $m);
+    if (!empty($m)) {
+      //Error in conversion
+      //@TODO check how batch API can handle the errors
+      $context['sandbox']['error'] = TRUE;
+      file_unmanaged_delete_recursive($files_directory);
+    }else{
+      $context['sandbox']['progress'] = $last_page_number;
+    }
+  }
+  //kpr('');
+  if(!$context['sandbox']['error']){
+    if($context['sandbox']['progress'] < $context['sandbox']['max'] - 1){
+      $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+      $context['message'] = $context['sandbox']['progress'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
+    }elseif($context['sandbox']['last_swf'] == FALSE){
+      $context['finished'] = ($context['sandbox']['max'] - 1) / $context['sandbox']['max'];
+      $context['sandbox']['last_swf'] = TRUE;
+      $context['message'] = 'Last swf is processing';
+    }else{
+      //Create common swf
+      $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
+      exec($command);
+      $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
+      $context['finished'] = 1;
+    }
+  }else{
+    $context['finished'] = 1;
+  }
 }
 
 /**
@@ -233,4 +346,29 @@ function _flexpaper_create_swf($file, $folder_name, $conversion_pid) {
     ->condition('pid', $conversion_pid)
     ->execute();
   return TRUE;
+}
+
+/**
+ * Count number of pages in PDF file
+ */
+function _flexpaper_get_pdf_pages_number($filepath) {
+  $stream = @fopen($filepath, "r");
+  $PDFContent = @fread($stream, filesize($filepath));
+  $firstValue = 0;
+  $secondValue = 0;
+  if (preg_match("/\/N\s+([0-9]+)/", $PDFContent, $matches)) {
+    $firstValue = $matches[1];
+  }
+
+  if (preg_match_all("/\/Count\s+([0-9]+)/s", $PDFContent, $matches)) {
+    $secondValue = max($matches[1]);
+  }
+  $max = (($secondValue != 0) ? $secondValue : max($firstValue, $secondValue));
+  fclose($stream);
+  //@TODO check if PHP imagemagick extension is installed
+  if ($max == 0) {
+    $im = new imagick($filepath);
+    $max = $im->getNumberImages();
+  }
+  return $max;
 }
