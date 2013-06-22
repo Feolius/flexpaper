@@ -1,5 +1,30 @@
 <?php
+function flexpaper_menu() {
+  $items['admin/config/flexpaper'] = array(
+    'title' => 'Flexpaper settings',
+    'description' => 'Gloabal settings for flexpaper module',
+    'page callback' => 'flexpaper_settings_page',
+    'access arguments' => array('administer site configuration'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  return $items;
+}
 
+function flexpaper_settings_page() {
+  return drupal_get_form('flexpaper_settings_page_form');
+}
+function flexpaper_settings_page_form($form, &$form_state) {
+  $form['flexpaper_key'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Flexpaper key'),
+    '#default_value' => variable_get('flexpaper_key', ''),
+    '#size' => 60,
+    '#maxlength' => 200,
+    '#required' => TRUE,
+  );
+  $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
+  return $form;
+}
 /**
  * Implements hook_field_formatter_info().
  */
