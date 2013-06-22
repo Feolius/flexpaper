@@ -208,9 +208,7 @@ function flexpaper_check_files_status($fids){
 function flexpaper_generate_swfs_batch_process($fid, &$context){
   $file = file_load($fid);
   $pdf_path = drupal_realpath($file->uri);
-  $files_directory = 'public://flexpaper/' . $fid . '_files';
-  $files_directory = drupal_realpath($files_directory);
-
+  $files_directory = drupal_realpath('public://') . '/flexpaper/' . $fid . '_files';
   if(empty($context['sandbox'])){
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
