@@ -67,6 +67,7 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
     }
     //Check if all files have corresponding swfs
     $status = flexpaper_check_files_status($files);
+    dpm($status);
     foreach ($status as $fid => $conversion_done) {
       if($conversion_done){
         //@TODO Show flexpaper instance here

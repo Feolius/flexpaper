@@ -1,0 +1,23 @@
+<?php
+/**
+ * @file
+ * Check that needed library is here
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function flexpaper_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  // Flexpaper library.
+  if (!in_array('flexpaper', array_keys(libraries_get_libraries()))) {
+    $requirements['flexpaper'] = array(
+      'title' => $t('Flexpaper library'),
+      'description' => $t('Flexpaper library is missing, please view the !readme for installation instructions.', array('!readme' => l('README.txt', drupal_get_path('module', 'flexpaper') . '/README.txt'))),
+      'severity' => REQUIREMENT_ERROR,
+    );
+  }
+  return $requirements;
+}
