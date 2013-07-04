@@ -14,23 +14,24 @@
             var i = 0;
 
             //Find all elements with class viewerPlaceHolder
-            var placeHolders = $('p.viewerPlaceHolder');
+            var placeHolders = $('div.flexpaper_viewer');
 
             //Put ids for this elements
             placeHolders.each(function(index){
-                $(this).attr('id', 'viewerPlaceHolder_' + index);
+               // $(this).attr('id', 'viewerPlaceHolder_' + index);
+                $(this).attr('id', 'documentViewer_' + index);
+                //$(this).attr('id', 'documentViewer');
             });
 
             //Implements showing for each element
             for (var i = 0; i < length; i++){
-                var id = 'viewerPlaceHolder_' + i.toString();
+                var id = 'documentViewer_' + i;
                 var res = $.find('#' + id);
                 if(res.length != 0){
                     var path = paths[i];
                     $('#' + id).FlexPaperViewer(
                         { config : {
-
-                            DOC : escape(getDocumentUrl(startDocument)),
+                            SwfFile : path,
                             Scale : 0.6,
                             ZoomTransition : 'easeOut',
                             ZoomTime : 0.5,
@@ -43,7 +44,7 @@
                             MaxZoomSize : 5,
                             SearchMatchAll : false,
                             InitViewMode : 'Portrait',
-                            RenderingOrder : '<?php echo ($configManager->getConfig('renderingorder.primary') . ',' . $configManager->getConfig('renderingorder.secondary')) ?>',
+                            RenderingOrder : 'flash, html',
 
                             ViewModeToolsVisible : true,
                             ZoomToolsVisible : true,
@@ -51,44 +52,45 @@
                             CursorToolsVisible : true,
                             SearchToolsVisible : true,
 
-                            DocSizeQueryService : 'services/swfsize.php?doc=' + startDocument,
-                            jsDirectory : '../js/',
+                            jsDirectory : Drupal.settings.flexpaper.jsDirectory,
                             localeDirectory : '../locale/',
 
-                            JSONDataType : 'jsonp',
-                            key : '<?php echo $configManager->getConfig('licensekey') ?>',
+                            JSONDataType : 'json',
+                            key : '',
 
                             localeChain: 'en_US'
 
                         }}
-                    );
-                    var fp = new FlexPaperViewer(
-                        FlexPaperViewerPath,
-                        id, {
-                            config : {
-                                SwfFile : path,
-                                Scale : 0.6,
-                                ZoomTransition : 'easeOut',
-                                ZoomTime : 0.5,
-                                ZoomInterval : 0.2,
-                                FitPageOnLoad : true,
-                                FitWidthOnLoad : false,
-                                FullScreenAsMaxWindow : false,
-                                ProgressiveLoading : false,
-                                MinZoomSize : 0.2,
-                                MaxZoomSize : 5,
-                                SearchMatchAll : true,
-                                InitViewMode : 'Portrait',
+            );
 
-                                ViewModeToolsVisible : true,
-                                ZoomToolsVisible : true,
-                                NavToolsVisible : true,
-                                CursorToolsVisible : true,
-                                SearchToolsVisible : true,
 
-                                localeChain: 'en_US'
-                            }
-                        });
+//                    var fp = new FlexPaperViewer(
+//                        FlexPaperViewerPath,
+//                        id, {
+//                            config : {
+//                                SwfFile : path,
+//                                Scale : 0.6,
+//                                ZoomTransition : 'easeOut',
+//                                ZoomTime : 0.5,
+//                                ZoomInterval : 0.2,
+//                                FitPageOnLoad : true,
+//                                FitWidthOnLoad : false,
+//                                FullScreenAsMaxWindow : false,
+//                                ProgressiveLoading : false,
+//                                MinZoomSize : 0.2,
+//                                MaxZoomSize : 5,
+//                                SearchMatchAll : true,
+//                                InitViewMode : 'Portrait',
+//
+//                                ViewModeToolsVisible : true,
+//                                ZoomToolsVisible : true,
+//                                NavToolsVisible : true,
+//                                CursorToolsVisible : true,
+//                                SearchToolsVisible : true,
+//
+//                                localeChain: 'en_US'
+//                            }
+//                        });
                 }
 
             }

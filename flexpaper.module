@@ -72,11 +72,12 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
     if (!empty($status)) {
       $library_path = libraries_get_path('flexpaper');
       $js_settings['flexPaperViewerPath'] = $base_url . '/' . $library_path . '/FlexPaperViewer.swf';
+      $js_settings['jsDirectory'] = $library_path . '/js/';
       foreach ($status as $fid => $conversion_done) {
         if ($conversion_done) {
           $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
           $element[$delta] = array(
-            '#theme' => 'flexpaper_view'
+            '#theme' => 'flexpaper_container'
           );
         }
         else {
@@ -85,6 +86,8 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       }
       drupal_add_js($library_path . '/js/flexpaper.js');
       drupal_add_js($library_path . '/js/flexpaper_handlers.js');
+      drupal_add_css($library_path . '/css/flexpaper.css');
+      drupal_add_css(drupal_get_path('module', 'flexpaper') . '/css/flexpaper.css');
       drupal_add_js(drupal_get_path('module', 'flexpaper') . '/flexpaper_init.js');
       drupal_add_js(array('flexpaper' => $js_settings), 'setting');
     }
@@ -300,8 +303,9 @@ function _flexpaper_remove_special_chars($string) {
  */
 function flexpaper_theme() {
   return array(
-    'flexpaper_view' => array(
-      'variables' => array(),
+    'flexpaper_container' => array(
+      'template' => 'theme/flexpaper-container',
+      'variables' => array()
     )
   );
 }
@@ -310,7 +314,9 @@ function flexpaper_theme() {
  * Theme function for the flexpaper formatter.
  */
 function theme_flexpaper_view() {
-  return '<p class = "viewerPlaceHolder">Document loading..</p>';
+  return '<div class="flexpaper_viewer_container">
+  <div class="flexpaper_viewer" style="width:770px;height:500px">File is downloading...</div>
+</div>';
 }
 
 /**
