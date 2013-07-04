@@ -3,10 +3,10 @@
         attach: function (context, settings){
 
             //Get paths of swf files
-            var paths = Drupal.settings.book_field.paths;
+            var paths = Drupal.settings.flexpaper.paths;
 
             //Get path of FlexPaperViewer.swf file
-            var FlexPaperViewerPath = Drupal.settings.book_field.FlexPaperViewerPath;
+            var FlexPaperViewerPath = Drupal.settings.flexpaper.flexPaperViewerPath;
 
             //We have to be able to show a few documents on page. Calculate numberof documents that have
             //to be shown on the page
@@ -27,6 +27,41 @@
                 var res = $.find('#' + id);
                 if(res.length != 0){
                     var path = paths[i];
+                    $('#' + id).FlexPaperViewer(
+                        { config : {
+
+                            DOC : escape(getDocumentUrl(startDocument)),
+                            Scale : 0.6,
+                            ZoomTransition : 'easeOut',
+                            ZoomTime : 0.5,
+                            ZoomInterval : 0.2,
+                            FitPageOnLoad : false,
+                            FitWidthOnLoad : true,
+                            FullScreenAsMaxWindow : false,
+                            ProgressiveLoading : false,
+                            MinZoomSize : 0.2,
+                            MaxZoomSize : 5,
+                            SearchMatchAll : false,
+                            InitViewMode : 'Portrait',
+                            RenderingOrder : '<?php echo ($configManager->getConfig('renderingorder.primary') . ',' . $configManager->getConfig('renderingorder.secondary')) ?>',
+
+                            ViewModeToolsVisible : true,
+                            ZoomToolsVisible : true,
+                            NavToolsVisible : true,
+                            CursorToolsVisible : true,
+                            SearchToolsVisible : true,
+
+                            DocSizeQueryService : 'services/swfsize.php?doc=' + startDocument,
+                            jsDirectory : '../js/',
+                            localeDirectory : '../locale/',
+
+                            JSONDataType : 'jsonp',
+                            key : '<?php echo $configManager->getConfig('licensekey') ?>',
+
+                            localeChain: 'en_US'
+
+                        }}
+                    );
                     var fp = new FlexPaperViewer(
                         FlexPaperViewerPath,
                         id, {
