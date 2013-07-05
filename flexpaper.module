@@ -1,4 +1,5 @@
 <?php
+//@TODO Add page where we can point the paths to pdf2swf and pdf2json
 function flexpaper_menu() {
   $items['admin/config/flexpaper'] = array(
     'title' => 'Flexpaper settings',
@@ -62,7 +63,7 @@ function flexpaper_field_formatter_info() {
         'min_zoom_size' => 0.2,
         'max_zoom_size' => 0.5,
         'search_match_all' => FALSE,
-        'init_view_mode' => 'Portrait',
+        'init_view_mode' => 0,
         'view_mode_tools_visible' => TRUE,
         'zoom_tools_visible' => TRUE,
         'nav_tools_visible' => TRUE,
@@ -136,6 +137,85 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       '#default_value' => $settings['zoom_interval'],
       '#required' => TRUE,
     );
+    $element['fit_page_on_load'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Fit page on load'),
+      '#default_value' => $settings['fit_page_on_load']
+    );
+    $element['fit_width_on_load'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Fit width on load'),
+      '#default_value' => $settings['fit_width_on_load']
+    );
+    $element['full_screen_as_max_window'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Use full screen as max window'),
+      '#default_value' => $settings['full_screen_as_max_window']
+    );
+    $element['progressive_loading'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Progressive loading'),
+      '#default_value' => $settings['progressive_loading']
+    );
+    $element['min_zoom_size'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Min zoom size'),
+      '#default_value' => $settings['min_zoom_size'],
+      '#required' => TRUE,
+    );
+    $element['max_zoom_size'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Max zoom size'),
+      '#default_value' => $settings['max_zoom_size'],
+      '#required' => TRUE,
+    );
+    $element['search_match_all'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Search match all'),
+      '#default_value' => $settings['search_match_all']
+    );
+    $element['init_view_mode'] = array(
+      '#type' => 'select',
+      '#title' => t('Initial view mode'),
+      '#options' => array(
+        '0' => t('Portrait'),
+        '1' => t('TwoPages'),
+        '2' => t('Tile')
+      ),
+      '#default_value' => $settings['init_view_mode'],
+    );
+    $element['tools_settings'] = array(
+      '#type' => 'fieldset',
+      '#title' => t('Toolbar settings'),
+      '#collapsible' => TRUE,
+      '#collapsed' => FALSE,
+    );
+    $element['tools_settings']['view_mode_tools_visible'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('View mode selector visible'),
+      '#default_value' => $settings['view_mode_tools_visible']
+    );
+    $element['tools_settings']['zoom_tools_visible'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Zoom tools visible'),
+      '#default_value' => $settings['zoom_tools_visible']
+    );
+    $element['tools_settings']['nav_tools_visible'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Navigation tools visible'),
+      '#default_value' => $settings['nav_tools_visible']
+    );
+    $element['tools_settings']['cursor_tools_visible'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Cursor tools visible'),
+      '#default_value' => $settings['cursor_tools_visible']
+    );
+    $element['tools_settings']['search_tools_visible'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Search tools visible'),
+      '#default_value' => $settings['search_tools_visible']
+    );
+
   }
   return $element;
 }
@@ -241,7 +321,6 @@ function flexpaper_check_files_status($files) {
     $context['sandbox']['error'] = FALSE;
     file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
   }
-  //@TODO Check if PHP can execute commands
   if (!$context['sandbox']['last_swf']) {
     $first_page_number = $context['sandbox']['progress'] + 1;
     $last_page_number = $context['sandbox']['progress'] + 5;
