@@ -51,9 +51,9 @@ function flexpaper_field_formatter_info() {
       'descrition' => 'Provides a way to show pdf files using flexpaper',
       'field types' => array('file'),
       'settings' => array(
-        'page_loading_mode' => 0,
+        'page_loading_mode' => 'split',
         'scale' => 0.6,
-        'zoom_transition' => 0,
+        'zoom_transition' => 'easeOut',
         'zoom_time' => 0.5,
         'zoom_interval' => 0.2,
         'fit_page_on_load' => FALSE,
@@ -63,7 +63,7 @@ function flexpaper_field_formatter_info() {
         'min_zoom_size' => 0.2,
         'max_zoom_size' => 0.5,
         'search_match_all' => FALSE,
-        'init_view_mode' => 0,
+        'init_view_mode' => 'Portrait',
         'view_mode_tools_visible' => TRUE,
         'zoom_tools_visible' => TRUE,
         'nav_tools_visible' => TRUE,
@@ -100,8 +100,8 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       '#type' => 'select',
       '#title' => t('Page loading mode'),
       '#options' => array(
-        '0' => t('Split'),
-        '1' => t('One file')
+        'split' => t('Split'),
+        'one file' => t('One file')
       ),
       '#default_value' => $settings['page_loading_mode'],
       '#description' => t("You can select how your documents will be loaded. If you choose split mode, flexpaer will download other pages when needed. It's preferable for large pdfs.")
@@ -117,11 +117,11 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       '#type' => 'select',
       '#title' => t('Page loading mode'),
       '#options' => array(
-        '0' => t('easeOut'),
-        '1' => t('linear'),
-        '2' => t('easenone'),
-        '3'=> t('easeInSine'),
-        '4' => t('easeOutQuad')
+        'easeOut' => t('easeOut'),
+        'linear' => t('linear'),
+        'easenone' => t('easenone'),
+        'easeInSine'=> t('easeInSine'),
+        'easeOutQuad' => t('easeOutQuad')
       ),
       '#default_value' => $settings['zoom_transition']
     );
@@ -178,9 +178,9 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       '#type' => 'select',
       '#title' => t('Initial view mode'),
       '#options' => array(
-        '0' => t('Portrait'),
-        '1' => t('TwoPages'),
-        '2' => t('Tile')
+        'Portrait' => t('Portrait'),
+        'TwoPages' => t('TwoPages'),
+        'Tile' => t('Tile')
       ),
       '#default_value' => $settings['init_view_mode'],
     );
@@ -236,6 +236,24 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
     //Check if all files have corresponding swfs
     $status = flexpaper_check_files_status($files);
     if (!empty($status)) {
+      $settings = $display['settings'];
+      $js_settings['scale'] = $settings['scale'];
+      $js_settings['zoomTransition'] = $settings['zoom_transition'];
+      $js_settings['zoomTime'] = $settings['zoom_time'];
+      $js_settings['zoomInterval'] = $settings['zoom_interval'];
+      $js_settings['fitPageOnLoad'] = $settings['fit_page_on_load'];
+      $js_settings['fullScreenAsMaxWindow'] = $settings['full_screen_as_max_window'];
+      $js_settings['progressiveLoading'] = $settings['progressive_loading'];
+      $js_settings['minZoomSize'] = $settings['min_zoom_size'];
+      $js_settings['maxZoomSize'] = $settings['max_zoom_size'];
+      $js_settings['searchMatchAll'] = $settings['search_match_all'];
+      $js_settings['initViewMode'] = $settings['init_view_mode'];
+      $js_settings['viewModeToolsVisible'] = $settings['view_mode_tools_visible'];
+      $js_settings['zoomToolsVisible'] = $settings['zoom_tools_visible'];
+      $js_settings['cursorToolsVisible'] = $settings['cursor_tools_visible'];
+      $js_settings['navToolsVisible'] = $settings['nav_tools_visible'];
+      $js_settings['searchToolsVisible'] = $settings['search_tools_visible'];
+
       $library_path = libraries_get_path('flexpaper');
       $js_settings['flexPaperViewerPath'] = $base_url . '/' . $library_path . '/FlexPaperViewer.swf';
       $js_settings['jsDirectory'] = $base_url . '/'. $library_path . '/js/';
@@ -310,7 +328,7 @@ function flexpaper_check_files_status($files) {
  * Flexpaper processor - Batch API process callback.
  */
 
-  function flexpaper_generate_swfs_batch_process($file, &$context){
+function flexpaper_generate_swfs_batch_process($file, &$context){
   $fid = $file->fid;
   $pdf_path = drupal_realpath($file->uri);
   $files_directory = drupal_realpath(file_default_scheme() .'://') . '/flexpaper/' . $fid . '_files';
