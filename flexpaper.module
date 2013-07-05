@@ -13,6 +13,7 @@ function flexpaper_menu() {
 function flexpaper_settings_page() {
   return drupal_get_form('flexpaper_settings_page_form');
 }
+
 function flexpaper_settings_page_form($form, &$form_state) {
   $form['flexpaper_key'] = array(
     '#type' => 'textfield',
@@ -25,6 +26,7 @@ function flexpaper_settings_page_form($form, &$form_state) {
   $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
   return $form;
 }
+
 /**
  * Implements hook_permission().
  */
@@ -58,21 +60,36 @@ function flexpaper_field_formatter_info() {
 function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
   global $base_url;
   $element = array();
-  if($display['type'] == 'flexpaper_formatter'){
+  if ($display['type'] == 'flexpaper_formatter') {
     $files = array();
     foreach ($items as $delta => $item) {
-      if($file = file_load($item['fid'])){
+      if ($file = file_load($item['fid'])) {
         $files[] = $file;
       }
     }
     //Check if all files have corresponding swfs
     $status = flexpaper_check_files_status($files);
-    foreach ($status as $fid => $conversion_done) {
-      if($conversion_done){
-        //@TODO Show flexpaper instance here
-      }else{
-        //@TODO Show file link or smth else
+    if (!empty($status)) {
+      $library_path = libraries_get_path('flexpaper');
+      $js_settings['flexPaperViewerPath'] = $base_url . '/' . $library_path . '/FlexPaperViewer.swf';
+      $js_settings['jsDirectory'] = $library_path . '/js/';
+      foreach ($status as $fid => $conversion_done) {
+        if ($conversion_done) {
+          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
+          $element[$delta] = array(
+            '#theme' => 'flexpaper_container'
+          );
+        }
+        else {
+          //@TODO Show file link or smth else
+        }
       }
+      drupal_add_js($library_path . '/js/flexpaper.js');
+      drupal_add_js($library_path . '/js/flexpaper_handlers.js');
+      drupal_add_css($library_path . '/css/flexpaper.css');
+      drupal_add_css(drupal_get_path('module', 'flexpaper') . '/css/flexpaper.css');
+      drupal_add_js(drupal_get_path('module', 'flexpaper') . '/flexpaper_init.js');
+      drupal_add_js(array('flexpaper' => $js_settings), 'setting');
     }
   }
 //  if ($display['type'] == 'book_field_formatter') {
@@ -181,32 +198,35 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
 /**
  * Check if each file with fid from given array has corresponding swf files
  */
-function flexpaper_check_files_status($files){
+function flexpaper_check_files_status($files) {
   $status = array();
   $batch = array(
     'title' => t('Generating swf files'),
     'operations' => array()
   );
-  foreach($files as $file){
-    if ($file->filemime = 'application/pdf'){
+  foreach ($files as $file) {
+    if ($file->filemime = 'application/pdf') {
       $files_directory = 'public://flexpaper/' . $file->fid . '_files';
       if (!file_prepare_directory($files_directory)) {
         $status[$file->fid] = FALSE;
         $batch['operations'][] = array('flexpaper_generate_swfs_batch_process', array($file));
-      }else{
+      }
+      else {
         $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
         $files_arr = scandir(drupal_realpath($files_directory));
-        if((count($files_arr) - 2) == ($pages_number + 1)){
+        if ((count($files_arr) - 2) == ($pages_number + 1)) {
           $status[$file->fid] = TRUE;
-        }else{
+        }
+        else {
           $status[$file->fid] = FALSE;
         }
       }
-    }else{
+    }
+    else {
       $status[$file->fid] = FALSE;
     }
   }
-  if (count($batch['operations']) > 0 && user_access('generate swf files'))  {
+  if (count($batch['operations']) > 0 && user_access('generate swf files')) {
     batch_set($batch);
     batch_process();
   }
@@ -216,6 +236,7 @@ function flexpaper_check_files_status($files){
 /**
  * Flexpaper processor - Batch API process callback.
  */
+
   function flexpaper_generate_swfs_batch_process($file, &$context){
   $fid = $file->fid;
   $pdf_path = drupal_realpath($file->uri);
@@ -228,7 +249,7 @@ function flexpaper_check_files_status($files){
     file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
   }
   //@TODO Check if PHP can execute commands
-  if(!$context['sandbox']['last_swf']){
+  if (!$context['sandbox']['last_swf']) {
     $first_page_number = $context['sandbox']['progress'] + 1;
     $last_page_number = $context['sandbox']['progress'] + 5;
     $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
@@ -239,26 +260,30 @@ function flexpaper_check_files_status($files){
       //Error in conversion
       //@TODO check how batch API can handle the errors
       $context['sandbox']['error'] = TRUE;
-    }else{
+    }
+    else {
       $context['sandbox']['progress'] = $last_page_number;
     }
   }
-  if(!$context['sandbox']['error']){
-    if($context['sandbox']['progress'] < $context['sandbox']['max'] - 1){
+  if (!$context['sandbox']['error']) {
+    if ($context['sandbox']['progress'] < $context['sandbox']['max'] - 1) {
       $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
       $context['message'] = $context['sandbox']['progress'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
-    }elseif($context['sandbox']['last_swf'] == FALSE){
+    }
+    elseif ($context['sandbox']['last_swf'] == FALSE) {
       $context['finished'] = ($context['sandbox']['max'] - 1) / $context['sandbox']['max'];
       $context['sandbox']['last_swf'] = TRUE;
       $context['message'] = 'Last swf is processing';
-    }else{
+    }
+    else {
       //Create common swf
       $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
       exec($command);
       $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
       $context['finished'] = 1;
     }
-  }else{
+  }
+  else {
     $context['finished'] = 1;
   }
 }
@@ -279,34 +304,20 @@ function _flexpaper_remove_special_chars($string) {
  */
 function flexpaper_theme() {
   return array(
-    'flexpaper_view' => array(
-      'variables' => array('file' => NULL, 'file_swf' => NULL, 'file_thumb' => NULL, 'icon_directory' => NULL),
-    ),
-    'flexpaper_google_doc_view' => array(
-      'variables' => array('file' => NULL, 'file_thumb' => NULL, 'icon_directory' => NULL),
-    ),
+    'flexpaper_container' => array(
+      'template' => 'theme/flexpaper-container',
+      'variables' => array()
+    )
   );
 }
 
 /**
  * Theme function for the flexpaper formatter.
  */
-function theme_flexpaper_view($variables) {
-  $file = (object) $variables['file'];
-  $file_thumb = (object) $variables['file_thumb'];
-  $out = '<p class = "viewerPlaceHolder">Document loading..</p>';
-  if (!empty($file_thumb)) {
-    $uri = $file->uri;
-    $uri_thumb = $file_thumb->uri;
-    $style = 'compressing';
-    $text = '<img src="' . image_style_url($style, $uri_thumb) . '">';
-    $options['html'] = TRUE;
-    $out = $out . '<h1>' . $file->filename . '</h1>' . l($text, file_create_url($uri), $options);
-  }
-  else {
-    $out = $out . theme_file_link($variables);
-  }
-  return $out;
+function theme_flexpaper_view() {
+  return '<div class="flexpaper_viewer_container">
+  <div class="flexpaper_viewer" style="width:770px;height:500px">File is downloading...</div>
+</div>';
 }
 
 /**
