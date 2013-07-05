@@ -124,13 +124,13 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       ),
       '#default_value' => $settings['zoom_transition']
     );
-    $element['zoom_time'] => array(
+    $element['zoom_time'] = array(
       '#type' => 'textfield',
       '#title' => t('Zoom time'),
       '#default_value' => $settings['zoom_time'],
       '#required' => TRUE,
     );
-    $element['zoom_interval'] => array(
+    $element['zoom_interval'] = array(
       '#type' => 'textfield',
       '#title' => t('Zoom interval'),
       '#default_value' => $settings['zoom_interval'],
