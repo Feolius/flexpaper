@@ -49,9 +49,95 @@ function flexpaper_field_formatter_info() {
       'label' => t('Flexpaper formatter'),
       'descrition' => 'Provides a way to show pdf files using flexpaper',
       'field types' => array('file'),
-      'settings' => array()
+      'settings' => array(
+        'page_loading_mode' => 0,
+        'scale' => 0.6,
+        'zoom_transition' => 0,
+        'zoom_time' => 0.5,
+        'zoom_interval' => 0.2,
+        'fit_page_on_load' => FALSE,
+        'fit_width_on_load' => TRUE,
+        'full_screen_as_max_window' => FALSE,
+        'progressive_loading' => FALSE,
+        'min_zoom_size' => 0.2,
+        'max_zoom_size' => 0.5,
+        'search_match_all' => FALSE,
+        'init_view_mode' => 'Portrait',
+        'view_mode_tools_visible' => TRUE,
+        'zoom_tools_visible' => TRUE,
+        'nav_tools_visible' => TRUE,
+        'cursor_tools_visible' => TRUE,
+        'search_tools_visible' => TRUE,
+
+      )
     ),
   );
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function flexpaper_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $summary = '';
+  $display = $instance['display'][$view_mode];
+  if ($display['type'] = 'flexpaper_formatter') {
+    //@TODO Maybe we need to change label
+    $summary = t('Click to change flexpaper settings');
+  }
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+  $element = array();
+  if ($display['type'] == 'flexpaper_formatter') {
+    $element['page_loading_mode'] = array(
+      '#type' => 'select',
+      '#title' => t('Page loading mode'),
+      '#options' => array(
+        '0' => t('Split'),
+        '1' => t('One file')
+      ),
+      '#default_value' => $settings['page_loading_mode'],
+      '#description' => t("You can select how your documents will be loaded. If you choose split mode, flexpaer will download other pages when needed. It's preferable for large pdfs.")
+    );
+    $element['scale'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Scale'),
+      '#default_value' => $settings['scale'],
+      '#required' => TRUE,
+    );
+    //@TODO not all possible Tweener zoom transition elements are added here
+    $element['zoom_transition'] = array(
+      '#type' => 'select',
+      '#title' => t('Page loading mode'),
+      '#options' => array(
+        '0' => t('easeOut'),
+        '1' => t('linear'),
+        '2' => t('easenone'),
+        '3'=> t('easeInSine'),
+        '4' => t('easeOutQuad')
+      ),
+      '#default_value' => $settings['zoom_transition']
+    );
+    $element['zoom_time'] => array(
+      '#type' => 'textfield',
+      '#title' => t('Zoom time'),
+      '#default_value' => $settings['zoom_time'],
+      '#required' => TRUE,
+    );
+    $element['zoom_interval'] => array(
+      '#type' => 'textfield',
+      '#title' => t('Zoom interval'),
+      '#default_value' => $settings['zoom_interval'],
+      '#required' => TRUE,
+    );
+  }
+  return $element;
 }
 
 /**
@@ -75,7 +161,11 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       $js_settings['jsDirectory'] = $library_path . '/js/';
       foreach ($status as $fid => $conversion_done) {
         if ($conversion_done) {
-          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
+//          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
+          //Number of pages should be in static cache
+          $pages_number_info = & drupal_static('pages_number_info');
+          $swf_number = $pages_number_info[$fid];
+          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files') . '/{' . $fid . '_[*,0].swf,' . $swf_number . '}';
           $element[$delta] = array(
             '#theme' => 'flexpaper_container'
           );
@@ -92,106 +182,6 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       drupal_add_js(array('flexpaper' => $js_settings), 'setting');
     }
   }
-//  if ($display['type'] == 'book_field_formatter') {
-//    foreach ($items as $delta => $item) {
-//
-//      //If swf files was created, we should show it in flexpaper.
-//      if ($item['conversion_done'] != 0) {
-//        $module_path = drupal_get_path('module', 'flexpaper');
-//        $FlexPaperViewerPath = $base_url . '/' . $module_path . '/FlexPaperViewer';
-//        $file = file_load($item['fid']);
-//        $file_name = get_real_file_name($file);
-//        $swf_directory = file_default_scheme() . '://books/' . $item['folder_name'];
-//        $path = drupal_realpath($swf_directory);
-//        $drupal_folder = realpath('.');
-//        $relative_path = str_replace($drupal_folder, "", $path);
-//        $files = scandir($path);
-//        if (isset($item['fid_thumb'])) {
-//          $num_of_swfs = count($files) - 4;
-//        }
-//        else {
-//          $num_of_swfs = count($files) - 3;
-//        }
-//
-//        $swf_path = '{' . $base_url . $relative_path . '/' . $file_name . '[*,0].swf,' . $num_of_swfs . '}';
-//
-//        $settings = array(
-//          'paths' => array($swf_path),
-//          'FlexPaperViewerPath' => $FlexPaperViewerPath,
-//        );
-//
-//        //Determine if we need highlighting
-//        if (isset($_GET['query'])) {
-//          $query = $_GET['query'];
-//          $query_parts = explode(' AND ', $query);
-//          foreach ($query_parts as $query_part) {
-//            $query_part_arr = explode(':', $query_part);
-//            if (count($query_part_arr) == 1) {
-//              $main_query = $query_part_arr[0];
-//            }
-//          }
-//        }
-//        //Add buttons that allow to jump by terms
-//        $buttons = array();
-//        if (!empty($main_query)) {
-//          if (substr($main_query, 0, 1) == '"' && substr($main_query, -1) == '"') {
-//            //We need only one button if user want to see the whole string
-//            $main_query = substr($main_query, 1);
-//            $main_query = substr($main_query, 0, -1);
-//            $settings['search'] = $main_query;
-//          }
-//          else {
-//            //We should divide string and make button for each word
-//            $terms = explode(' ', $main_query);
-//            if (count($terms) > 1) {
-//              foreach ($terms as $term) {
-//                $buttons[$term . '_button'] = array(
-//                  '#type' => 'button',
-//                  '#value' => $term,
-//                  '#attributes' => array(
-//                    'class' => array('flexpaper-highlight-button')
-//                  )
-//                );
-//              }
-//            }
-//          }
-//          $buttons['search_string_button'] = array(
-//            '#type' => 'button',
-//            '#value' => $main_query,
-//            '#attributes' => array(
-//              'class' => array('flexpaper-highlight-button')
-//            )
-//          );
-//          $settings['search'] = $main_query;
-//        }
-//        $element[$delta] = array(
-//          'flexpaper' => array(
-//            '#attached' => array(
-//              'css' => array($module_path . '/flexpaper.css'),
-//              'js' => array($module_path . '/flexpaper_flash.js', $module_path . '/flexpaper.js'),
-//            ),
-//            '#theme' => 'flexpaper_view',
-//            '#file' => $file,
-//          )
-//        );
-//        if (module_exists('book_thumbnail') && ($file_thumb = file_load($item['fid_thumb']))) {
-//          $element[$delta]['flexpaper']['#file_thumb'] = $file_thumb;
-//        }
-//        $element[$delta] = array_merge($buttons, $element[$delta]);
-//        drupal_add_js(array('flexpaper' => $settings), 'setting');
-//      }
-//      elseif ($item['fid'] != 0) {
-//        $file = file_load($item['fid']);
-//        if (module_exists('book_thumbnail') && ($file_thumb = file_load($item['fid_thumb']))) {
-//          $element[$delta]['#file_thumb'] = $file_thumb;
-//        }
-//        $element[$delta] = array(
-//          '#theme' => 'flexpaper_google_doc_view',
-//          '#file' => $file,
-//        );
-//      }
-//    }
-//  }
   return $element;
 }
 
@@ -214,8 +204,11 @@ function flexpaper_check_files_status($files) {
       else {
         $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
         $files_arr = scandir(drupal_realpath($files_directory));
-        if ((count($files_arr) - 2) == ($pages_number + 1)) {
+        if ((count($files_arr) - 3) == $pages_number) {
           $status[$file->fid] = TRUE;
+          //Save number of pages in static cache because we need it later
+          $pages_number_info = & drupal_static('pages_number_info');
+          $pages_number_info[$file->fid] = $pages_number;
         }
         else {
           $status[$file->fid] = FALSE;

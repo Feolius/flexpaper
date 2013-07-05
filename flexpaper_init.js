@@ -5,9 +5,6 @@
             //Get paths of swf files
             var paths = Drupal.settings.flexpaper.paths;
 
-            //Get path of FlexPaperViewer.swf file
-            var FlexPaperViewerPath = Drupal.settings.flexpaper.flexPaperViewerPath;
-
             //We have to be able to show a few documents on page. Calculate numberof documents that have
             //to be shown on the page
             var length = paths.length;
