@@ -216,10 +216,10 @@ function flexpaper_check_files_status($files){
 /**
  * Flexpaper processor - Batch API process callback.
  */
-function flexpaper_generate_swfs_batch_process($file, &$context){
+  function flexpaper_generate_swfs_batch_process($file, &$context){
   $fid = $file->fid;
   $pdf_path = drupal_realpath($file->uri);
-  $files_directory = drupal_realpath('public://') . '/flexpaper/' . $fid . '_files';
+  $files_directory = drupal_realpath(file_default_scheme() .'://') . '/flexpaper/' . $fid . '_files';
   if(empty($context['sandbox'])){
     $context['sandbox']['progress'] = 0;
     $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
