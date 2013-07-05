@@ -158,7 +158,7 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
     if (!empty($status)) {
       $library_path = libraries_get_path('flexpaper');
       $js_settings['flexPaperViewerPath'] = $base_url . '/' . $library_path . '/FlexPaperViewer.swf';
-      $js_settings['jsDirectory'] = $library_path . '/js/';
+      $js_settings['jsDirectory'] = $base_url . '/'. $library_path . '/js/';
       foreach ($status as $fid => $conversion_done) {
         if ($conversion_done) {
 //          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
