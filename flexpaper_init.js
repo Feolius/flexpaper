@@ -2,8 +2,9 @@
     Drupal.behaviors.flexpaper = {
         attach: function (context, settings){
 
-            //Get paths of swf files
+            //Get paths for swf and json files
             var paths = Drupal.settings.flexpaper.paths;
+            var jsonFiles = Drupal.settings.flexpaper.jsonFiles;
 
             //We have to be able to show a few documents on page. Calculate numberof documents that have
             //to be shown on the page
@@ -15,9 +16,7 @@
 
             //Put ids for this elements
             placeHolders.each(function(index){
-               // $(this).attr('id', 'viewerPlaceHolder_' + index);
                 $(this).attr('id', 'documentViewer_' + index);
-                //$(this).attr('id', 'documentViewer');
             });
 
             //Implements showing for each element
@@ -25,10 +24,11 @@
                 var id = 'documentViewer_' + i;
                 var res = $.find('#' + id);
                 if(res.length != 0){
-                    var path = paths[i];
                     $('#' + id).FlexPaperViewer(
                         { config : {
-                            SwfFile : path,
+                            SwfFile : paths[i],
+                            JSONFile : jsonFiles[i],
+
                             Scale : Drupal.settings.flexpaper.scale,
                             ZoomTransition : Drupal.settings.flexpaper.zoomTransition,
                             ZoomTime : Drupal.settings.flexpaper.zoomTime,
@@ -50,44 +50,14 @@
                             SearchToolsVisible : Drupal.settings.flexpaper.searchToolsVisible,
 
                             jsDirectory : Drupal.settings.flexpaper.jsDirectory,
-                            localeDirectory : '../locale/',
 
                             JSONDataType : 'json',
                             key : '',
 
-                            localeChain: 'en_US'
+
 
                         }}
             );
-
-
-//                    var fp = new FlexPaperViewer(
-//                        FlexPaperViewerPath,
-//                        id, {
-//                            config : {
-//                                SwfFile : path,
-//                                Scale : 0.6,
-//                                ZoomTransition : 'easeOut',
-//                                ZoomTime : 0.5,
-//                                ZoomInterval : 0.2,
-//                                FitPageOnLoad : true,
-//                                FitWidthOnLoad : false,
-//                                FullScreenAsMaxWindow : false,
-//                                ProgressiveLoading : false,
-//                                MinZoomSize : 0.2,
-//                                MaxZoomSize : 5,
-//                                SearchMatchAll : true,
-//                                InitViewMode : 'Portrait',
-//
-//                                ViewModeToolsVisible : true,
-//                                ZoomToolsVisible : true,
-//                                NavToolsVisible : true,
-//                                CursorToolsVisible : true,
-//                                SearchToolsVisible : true,
-//
-//                                localeChain: 'en_US'
-//                            }
-//                        });
                 }
 
             }

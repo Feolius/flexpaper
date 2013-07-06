@@ -237,6 +237,7 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
     $status = flexpaper_check_files_status($files);
     if (!empty($status)) {
       $settings = $display['settings'];
+      //Flexpaper settings
       $js_settings['scale'] = $settings['scale'];
       $js_settings['zoomTransition'] = $settings['zoom_transition'];
       $js_settings['zoomTime'] = $settings['zoom_time'];
@@ -255,21 +256,30 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       $js_settings['searchToolsVisible'] = $settings['search_tools_visible'];
 
       $library_path = libraries_get_path('flexpaper');
-      $js_settings['flexPaperViewerPath'] = $base_url . '/' . $library_path . '/FlexPaperViewer.swf';
       $js_settings['jsDirectory'] = $base_url . '/'. $library_path . '/js/';
       foreach ($status as $fid => $conversion_done) {
         if ($conversion_done) {
-//          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files/' . $fid . '.swf');
-          //Number of pages should be in static cache
-          $pages_number_info = & drupal_static('pages_number_info');
-          $swf_number = $pages_number_info[$fid];
-          $js_settings['paths'][] = file_create_url('public://flexpaper/' . $fid . '_files') . '/{' . $fid . '_[*,0].swf,' . $swf_number . '}';
+          $folder_url = file_create_url('public://flexpaper/' . $fid . '_files');
+          $files_directory_info = & drupal_static('flexpaper_files_directory_info');
+          $files_arr = $files_directory_info[$fid];
+          if($settings['page_loading_mode'] == 'split'){
+            $swf_number = count($files_arr) - 3;
+            $js_settings['paths'][] = $folder_url . '/{' . $fid . '_[*,0].swf,' . $swf_number . '}';
+          }else{
+            $js_settings['paths'][] = $folder_url . '/' . $fid . '.swf';
+          }
           $element[$delta] = array(
             '#theme' => 'flexpaper_container'
           );
+          //Check if we have json
+          if (in_array($fid . '.js', $files_arr)) {
+            $js_settings['jsonFiles'][] = $folder_url . '/' . $fid . '.js';
+          }else{
+            $js_settings['jsonFiles'][] = '';
+          }
         }
         else {
-          //@TODO Show file link or smth else
+          //@TODO Show file link or smth else or maybe remove it at all
         }
       }
       drupal_add_js($library_path . '/js/flexpaper.js');
@@ -300,15 +310,14 @@ function flexpaper_check_files_status($files) {
         $batch['operations'][] = array('flexpaper_generate_swfs_batch_process', array($file));
       }
       else {
-        $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
+        //Assume that if main swf file is in place, everything is good.
         $files_arr = scandir(drupal_realpath($files_directory));
-        if ((count($files_arr) - 3) == $pages_number) {
+        //Put it in static cache, because we need it later
+        $files_directory_info = & drupal_static('flexpaper_files_directory_info');
+        $files_directory_info[$file->fid] = $files_arr;
+        if (in_array($file->fid . '.swf', $files_arr)) {
           $status[$file->fid] = TRUE;
-          //Save number of pages in static cache because we need it later
-          $pages_number_info = & drupal_static('pages_number_info');
-          $pages_number_info[$file->fid] = $pages_number;
-        }
-        else {
+        }else{
           $status[$file->fid] = FALSE;
         }
       }
@@ -334,6 +343,7 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
   $files_directory = drupal_realpath(file_default_scheme() .'://') . '/flexpaper/' . $fid . '_files';
   if(empty($context['sandbox'])){
     $context['sandbox']['progress'] = 0;
+    //@TODO Check if function return proper number of pages
     $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
     $context['sandbox']['last_swf'] = FALSE;
     $context['sandbox']['error'] = FALSE;
@@ -348,7 +358,7 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
     preg_match($pattern, $output, $m);
     if (!empty($m)) {
       //Error in conversion
-      //@TODO check how batch API can handle the errors
+      watchdog('flexpaper', 'Error in conversion pdf to swf process. Log info: %info', array('%info' => $output), WATCHDOG_ERROR);
       $context['sandbox']['error'] = TRUE;
     }
     else {
@@ -368,6 +378,9 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
     else {
       //Create common swf
       $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
+      exec($command);
+      //Create json file if pdf2json is available
+      $command = "pdf2json '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
       exec($command);
       $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
       $context['finished'] = 1;
