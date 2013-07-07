@@ -1,31 +1,48 @@
 <?php
-//@TODO Add page where we can point the paths to pdf2swf and pdf2json
+
 function flexpaper_menu() {
   $items['admin/config/flexpaper'] = array(
     'title' => 'Flexpaper settings',
     'description' => 'Gloabal settings for flexpaper module',
-    'page callback' => 'flexpaper_settings_page',
+    'page callback' => 'drupal_get_form',
     'access arguments' => array('administer site configuration'),
+    'page arguments' => array('flexpaper_settings_page_form'),
     'type' => MENU_NORMAL_ITEM,
   );
   return $items;
 }
 
-function flexpaper_settings_page() {
-  return drupal_get_form('flexpaper_settings_page_form');
-}
-
 function flexpaper_settings_page_form($form, &$form_state) {
-  $form['flexpaper_key'] = array(
+  if (empty($form_state['input'])) {
+    if (!flexpaper_pdf2swfEnabled(variable_get('path_to_pdf2swf', 'pdf2swf'))) {
+      drupal_set_message('Path to pdf2swf tool is not properly set', 'warning');
+    }
+    else {
+      drupal_set_message('Path to pdf2swf tool is working properly, and you don\'t need to set path to it');
+    }
+
+    if (!flexpaper_pdf2jsonEnabled(variable_get('path_to_pdf2json', 'pdf2json'))) {
+      drupal_set_message('Path to pdf2json tool is not properly set', 'warning');
+    }
+    else {
+      drupal_set_message('Path to pdf2json tool is working properly, and you don\'t need to set path to it');
+    }
+  }
+  $form['path_to_pdf2swf'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Path to pdf2swf'),
+    '#default_value' => variable_get('path_to_pdf2swf', 'pdf2swf'),
+    '#size' => 100,
+    '#maxlength' => 300,
+  );
+  $form['path_to_pdf2json'] = array(
     '#type' => 'textfield',
     '#title' => t('Flexpaper key'),
-    '#default_value' => variable_get('flexpaper_key', ''),
-    '#size' => 60,
-    '#maxlength' => 200,
-    '#required' => TRUE,
+    '#default_value' => variable_get('path_to_pdf2json', 'pdf2json'),
+    '#size' => 100,
+    '#maxlength' => 300,
   );
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Save settings'));
-  return $form;
+  return system_settings_form($form);
 }
 
 /**
@@ -466,4 +483,50 @@ function _flexpaper_get_pdf_pages_number($filepath) {
     $max = $im->getNumberImages();
   }
   return $max;
+}
+
+function flexpaper_pdf2swfEnabled($path_to_pdf2swf){
+  try {
+    if (function_exists('exec') && (DIRECTORY_SEPARATOR == '/' || (DIRECTORY_SEPARATOR == '\\' && $path_to_pdf2swf != 'pdf2swf'))) {
+      if(	PHP_OS == "WIN32" || PHP_OS == "WINNT"	){
+        exec('"' . $path_to_pdf2swf . '"' . ' --version 2>&1', $out);
+      }else{
+        exec($path_to_pdf2swf . ' --version 2>&1', $out);
+      }
+      if (empty($out)) {
+        return false;
+      } else {
+        if (strpos($out[0], 'swftools') !== false) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else {
+      return false;
+    }
+  }catch (Exception $ex) {return false;}
+}
+
+function flexpaper_pdf2jsonEnabled($path_to_pdf2json){
+  try{
+    if (function_exists('exec') && (DIRECTORY_SEPARATOR == '/' || (DIRECTORY_SEPARATOR == '\\' && $path_to_pdf2json != 'pdf2json'))) {
+      if(	PHP_OS == "WIN32" || PHP_OS == "WINNT"	){
+        exec('"' . $path_to_pdf2json . '"' . ' -help 2>&1', $out);
+      }else{
+        exec($path_to_pdf2json . ' -help 2>&1', $out);
+      }
+      if (empty($out)) {
+        return false;
+      } else {
+        if (strpos($out[0], 'devaldi') !== false) {
+          return true;
+        } else {
+          return false;
+        }
+      }
+    } else {
+      return false;
+    }
+  }catch (Exception $ex) {return false;}
 }
