@@ -296,7 +296,13 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
           }
         }
         else {
-          //@TODO Show file link or smth else or maybe remove it at all
+          //@TODO Show file link or smth else or maybe remove it at all. Maybe we should add some warning here before link? And file_load($fid) is called twice in tht function
+          $element[$delta] = array(
+            '#markup' => theme_file_link(array(
+              'file' => file_load($fid),
+              'icon_directory' => variable_get('file_icon_directory', drupal_get_path('module', 'file') . '/icons')
+            )),
+          );
         }
       }
       drupal_add_js($library_path . '/js/flexpaper.js');
