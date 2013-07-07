@@ -367,63 +367,85 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
   if(empty($context['sandbox'])){
     $context['sandbox']['progress'] = 0;
     //@TODO Check if function return proper number of pages
-    $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
-    $context['sandbox']['last_swf'] = FALSE;
-    $context['sandbox']['error'] = FALSE;
+    $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
+    if($pages_number != 0){
+      //It means that our function was able to count number of pages. So, we can show progress info for user
+      $context['sandbox']['progress_info'] = TRUE;
+      $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
+      $context['sandbox']['last_swf'] = FALSE;
+      $context['sandbox']['error'] = FALSE;
+    }else{
+      //We don't have number of pages. We can try to make all operations at row.
+      $context['sandbox']['progress_info'] = FALSE;
+    }
     file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
   }
-  if (!$context['sandbox']['last_swf']) {
-    $first_page_number = $context['sandbox']['progress'] + 1;
-    $last_page_number = $context['sandbox']['progress'] + 5;
-    $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
-    $output = shell_exec(($command));
-    $pattern = '/(FATAL|ERROR)/i';
-    preg_match($pattern, $output, $m);
-    if (!empty($m)) {
-      //Error in conversion
-      watchdog('flexpaper', 'Error in conversion pdf to swf process. Log info: %info', array('%info' => $output), WATCHDOG_ERROR);
-      $context['sandbox']['error'] = TRUE;
-    }
-    else {
+  if($context['sandbox']['progress_info']){
+    if (!$context['sandbox']['last_swf']) {
+      $first_page_number = $context['sandbox']['progress'] + 1;
+      $last_page_number = $context['sandbox']['progress'] + 5;
+      $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
+      $context['sandbox']['error'] = _flexpaper_exec_conversion_command($command);
       $context['sandbox']['progress'] = $last_page_number;
     }
-  }
-  if (!$context['sandbox']['error']) {
-    if ($context['sandbox']['progress'] < $context['sandbox']['max'] - 1) {
-      $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
-      $context['message'] = $context['sandbox']['progress'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
-    }
-    elseif ($context['sandbox']['last_swf'] == FALSE) {
-      $context['finished'] = ($context['sandbox']['max'] - 1) / $context['sandbox']['max'];
-      $context['sandbox']['last_swf'] = TRUE;
-      $context['message'] = 'Last swf is processing';
+    if (!$context['sandbox']['error']) {
+      if ($context['sandbox']['progress'] < $context['sandbox']['max'] - 1) {
+        $context['finished'] = $context['sandbox']['progress'] / $context['sandbox']['max'];
+        $context['message'] = $context['sandbox']['progress'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
+      }
+      elseif ($context['sandbox']['last_swf'] == FALSE) {
+        $context['finished'] = ($context['sandbox']['max'] - 1) / $context['sandbox']['max'];
+        $context['sandbox']['last_swf'] = TRUE;
+        $context['message'] = 'Last swf is processing';
+      }
+      else {
+        //Create common swf
+        $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
+        _flexpaper_exec_conversion_command($command);
+        //Create json file if pdf2json is available
+        $command = variable_get('path_to_pdf2json', 'pdf2json') . " '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
+        _flexpaper_exec_conversion_command($command);
+        $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
+        $context['finished'] = 1;
+      }
     }
     else {
-      //Create common swf
-      $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
-      exec($command);
-      //Create json file if pdf2json is available
-      $command = variable_get('path_to_pdf2json', 'pdf2json') . " '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
-      exec($command);
-      $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
       $context['finished'] = 1;
     }
-  }
-  else {
+  }else{
+    //@TODO Check this codeblock
+    $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -f -T 9 -t -s storeallcharacters";
+    _flexpaper_exec_conversion_command($command);
+    $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
+    _flexpaper_exec_conversion_command($command);
+    $command = variable_get('path_to_pdf2json', 'pdf2json') . " '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
+    _flexpaper_exec_conversion_command($command);
     $context['finished'] = 1;
   }
 }
 
 /**
- * Remove special characters that prevent flexpaper work
+ * Execute conversion command. Return FALSE if there was an error
  */
-function _flexpaper_remove_special_chars($string) {
-  $string = str_replace('?', '', $string);
-  $string = str_replace('#', '', $string);
-  $string = str_replace('&', '', $string);
-  return $string;
+function _flexpaper_exec_conversion_command($command){
+  $output = shell_exec($command);
+  return _flexpaper_check_error_in_conversion($output);
 }
 
+/**
+ * Check if there was an error in conversion. Return TRUE if error appeared, FALSE otherwise.
+ */
+function _flexpaper_check_error_in_conversion($output){
+  $pattern = '/(FATAL|ERROR)/i';
+  preg_match($pattern, $output, $m);
+  if (!empty($m)) {
+    watchdog('flexpaper', 'Error in conversion pdf to swf process. Log info: %info', array('%info' => $output), WATCHDOG_ERROR);
+    return TRUE;
+  }
+  else {
+    return FALSE;
+  }
+}
 
 /**
  * Implements hook_theme().
@@ -447,26 +469,6 @@ function theme_flexpaper_view() {
 }
 
 /**
- * Get real file name without suffix
- */
-function get_real_file_name($file) {
-  $uri = $file->uri;
-  $real_file_name = drupal_basename($uri);
-
-  $arr = explode('.', $real_file_name);
-  $arr_length = count($arr);
-  if ($arr_length > 1) {
-    //Exclude name of file extension
-    unset($arr[$arr_length - 1]);
-    $real_file_name = implode('.', $arr);
-  }
-  else {
-    $real_file_name = $arr[0];
-  }
-  return $real_file_name;
-}
-
-/**
  * Count number of pages in PDF file
  */
 function _flexpaper_get_pdf_pages_number($filepath) {
@@ -483,11 +485,14 @@ function _flexpaper_get_pdf_pages_number($filepath) {
   }
   $max = (($secondValue != 0) ? $secondValue : max($firstValue, $secondValue));
   fclose($stream);
-  //@TODO check if PHP imagemagick extension is installed DONE?
   if ($max == 0) {
     if (extension_loaded('imagick')) {
-      $im = new imagick($filepath);
-      $max = $im->getNumberImages();
+      try {
+        $im = new imagick($filepath);
+        $max = $im->getNumberImages();
+      }catch(Exception $ex){
+        watchdog('flexpaper', 'Error in attempt to count number of pages using imagick. Exception: %info', array('%info' => $ex->getMessage()), WATCHDOG_ERROR);
+      }
     }
   }
   return $max;
@@ -502,18 +507,18 @@ function flexpaper_pdf2swfEnabled($path_to_pdf2swf){
         exec($path_to_pdf2swf . ' --version 2>&1', $out);
       }
       if (empty($out)) {
-        return false;
+        return FALSE;
       } else {
-        if (strpos($out[0], 'swftools') !== false) {
-          return true;
+        if (strpos($out[0], 'swftools') !== FALSE) {
+          return TRUE;
         } else {
-          return false;
+          return FALSE;
         }
       }
     } else {
-      return false;
+      return FALSE;
     }
-  }catch (Exception $ex) {return false;}
+  }catch (Exception $ex) {return FALSE;}
 }
 
 function flexpaper_pdf2jsonEnabled($path_to_pdf2json){
@@ -525,16 +530,16 @@ function flexpaper_pdf2jsonEnabled($path_to_pdf2json){
         exec($path_to_pdf2json . ' -help 2>&1', $out);
       }
       if (empty($out)) {
-        return false;
+        return FALSE;
       } else {
-        if (strpos($out[0], 'devaldi') !== false) {
-          return true;
+        if (strpos($out[0], 'devaldi') !== FALSE) {
+          return TRUE;
         } else {
-          return false;
+          return FALSE;
         }
       }
     } else {
-      return false;
+      return FALSE;
     }
-  }catch (Exception $ex) {return false;}
+  }catch (Exception $ex) {return FALSE;}
 }
