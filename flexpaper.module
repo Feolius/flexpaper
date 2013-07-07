@@ -369,7 +369,7 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
   if (!$context['sandbox']['last_swf']) {
     $first_page_number = $context['sandbox']['progress'] + 1;
     $last_page_number = $context['sandbox']['progress'] + 5;
-    $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
+    $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -p " . $first_page_number . "-" . $last_page_number . " -f -T 9 -t -s storeallcharacters";
     $output = shell_exec(($command));
     $pattern = '/(FATAL|ERROR)/i';
     preg_match($pattern, $output, $m);
@@ -394,10 +394,10 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
     }
     else {
       //Create common swf
-      $command = "pdf2swf '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
+      $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . ".swf' -f -T 9 -t -s storeallcharacters";
       exec($command);
       //Create json file if pdf2json is available
-      $command = "pdf2json '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
+      $command = variable_get('path_to_pdf2json', 'pdf2json') . " '" . $pdf_path . "' -enc UTF-8 -compress -hidden '" . $files_directory . "/" . $fid . ".js'";
       exec($command);
       $context['message'] = $context['sandbox']['max'] . ' of ' . $context['sandbox']['max'] . ' files are processed';
       $context['finished'] = 1;
