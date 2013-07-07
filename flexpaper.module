@@ -477,10 +477,12 @@ function _flexpaper_get_pdf_pages_number($filepath) {
   }
   $max = (($secondValue != 0) ? $secondValue : max($firstValue, $secondValue));
   fclose($stream);
-  //@TODO check if PHP imagemagick extension is installed
+  //@TODO check if PHP imagemagick extension is installed DONE?
   if ($max == 0) {
-    $im = new imagick($filepath);
-    $max = $im->getNumberImages();
+    if (extension_loaded('imagick')) {
+      $im = new imagick($filepath);
+      $max = $im->getNumberImages();
+    }
   }
   return $max;
 }
