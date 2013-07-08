@@ -1,7 +1,7 @@
 <?php
 
 function flexpaper_menu() {
-  $items['admin/config/flexpaper'] = array(
+  $items['https://drupal.org/project/libraries'] = array(
     'title' => 'Flexpaper settings',
     'description' => 'Gloabal settings for flexpaper module',
     'page callback' => 'drupal_get_form',
