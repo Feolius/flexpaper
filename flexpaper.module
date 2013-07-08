@@ -267,11 +267,11 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       $js_settings['maxZoomSize'] = $settings['max_zoom_size'];
       $js_settings['searchMatchAll'] = $settings['search_match_all'];
       $js_settings['initViewMode'] = $settings['init_view_mode'];
-      $js_settings['viewModeToolsVisible'] = $settings['view_mode_tools_visible'];
-      $js_settings['zoomToolsVisible'] = $settings['zoom_tools_visible'];
-      $js_settings['cursorToolsVisible'] = $settings['cursor_tools_visible'];
-      $js_settings['navToolsVisible'] = $settings['nav_tools_visible'];
-      $js_settings['searchToolsVisible'] = $settings['search_tools_visible'];
+      $js_settings['viewModeToolsVisible'] = $settings['tools_settings']['view_mode_tools_visible'];
+      $js_settings['zoomToolsVisible'] = $settings['tools_settings']['zoom_tools_visible'];
+      $js_settings['cursorToolsVisible'] = $settings['tools_settings']['cursor_tools_visible'];
+      $js_settings['navToolsVisible'] = $settings['tools_settings']['nav_tools_visible'];
+      $js_settings['searchToolsVisible'] = $settings['tools_settings']['search_tools_visible'];
 
       $library_path = libraries_get_path('flexpaper');
       $js_settings['jsDirectory'] = $base_url . '/'. $library_path . '/js/';
