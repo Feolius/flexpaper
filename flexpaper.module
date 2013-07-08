@@ -196,7 +196,7 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
       '#title' => t('Initial view mode'),
       '#options' => array(
         'Portrait' => t('Portrait'),
-        'TwoPages' => t('TwoPages'),
+        'TwoPage' => t('Two pages'),
         'Tile' => t('Tile')
       ),
       '#default_value' => $settings['init_view_mode'],
