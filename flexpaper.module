@@ -81,12 +81,13 @@ function flexpaper_field_formatter_info() {
         'max_zoom_size' => 5,
         'search_match_all' => FALSE,
         'init_view_mode' => 'Portrait',
-        'view_mode_tools_visible' => TRUE,
-        'zoom_tools_visible' => TRUE,
-        'nav_tools_visible' => TRUE,
-        'cursor_tools_visible' => TRUE,
-        'search_tools_visible' => TRUE,
-
+        'tools_settings' => array(
+          'view_mode_tools_visible' => TRUE,
+          'zoom_tools_visible' => TRUE,
+          'nav_tools_visible' => TRUE,
+          'cursor_tools_visible' => TRUE,
+          'search_tools_visible' => TRUE,
+        ),
       )
     ),
   );
@@ -210,27 +211,27 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
     $element['tools_settings']['view_mode_tools_visible'] = array(
       '#type' => 'checkbox',
       '#title' => t('View mode selector visible'),
-      '#default_value' => $settings['view_mode_tools_visible']
+      '#default_value' => $settings['tools_settings']['view_mode_tools_visible']
     );
     $element['tools_settings']['zoom_tools_visible'] = array(
       '#type' => 'checkbox',
       '#title' => t('Zoom tools visible'),
-      '#default_value' => $settings['zoom_tools_visible']
+      '#default_value' => $settings['tools_settings']['zoom_tools_visible']
     );
     $element['tools_settings']['nav_tools_visible'] = array(
       '#type' => 'checkbox',
       '#title' => t('Navigation tools visible'),
-      '#default_value' => $settings['nav_tools_visible']
+      '#default_value' => $settings['tools_settings']['nav_tools_visible']
     );
     $element['tools_settings']['cursor_tools_visible'] = array(
       '#type' => 'checkbox',
       '#title' => t('Cursor tools visible'),
-      '#default_value' => $settings['cursor_tools_visible']
+      '#default_value' => $settings['tools_settings']['cursor_tools_visible']
     );
     $element['tools_settings']['search_tools_visible'] = array(
       '#type' => 'checkbox',
       '#title' => t('Search tools visible'),
-      '#default_value' => $settings['search_tools_visible']
+      '#default_value' => $settings['tools_settings']['search_tools_visible']
     );
 
   }
