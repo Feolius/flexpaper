@@ -78,7 +78,7 @@ function flexpaper_field_formatter_info() {
         'full_screen_as_max_window' => FALSE,
         'progressive_loading' => FALSE,
         'min_zoom_size' => 0.2,
-        'max_zoom_size' => 0.5,
+        'max_zoom_size' => 5,
         'search_match_all' => FALSE,
         'init_view_mode' => 'Portrait',
         'view_mode_tools_visible' => TRUE,

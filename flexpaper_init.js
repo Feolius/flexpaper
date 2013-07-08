@@ -52,10 +52,7 @@
                             jsDirectory : Drupal.settings.flexpaper.jsDirectory,
 
                             JSONDataType : 'json',
-                            key : '',
-
-
-
+                            key : ''
                         }}
             );
                 }
