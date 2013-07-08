@@ -279,8 +279,16 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
           $folder_url = file_create_url('public://flexpaper/' . $fid . '_files');
           $files_directory_info = & drupal_static('flexpaper_files_directory_info');
           $files_arr = $files_directory_info[$fid];
-          if($settings['page_loading_mode'] == 'split'){
+          //Check if we have json
+          if (in_array($fid . '.js', $files_arr)) {
+            $js_settings['jsonFiles'][] = $folder_url . '/' . $fid . '.js';
+            $swf_number = count($files_arr) - 4;
+          }else{
+            $js_settings['jsonFiles'][] = '';
             $swf_number = count($files_arr) - 3;
+          }
+          if($settings['page_loading_mode'] == 'split'){
+
             $js_settings['paths'][] = $folder_url . '/{' . $fid . '_[*,0].swf,' . $swf_number . '}';
           }else{
             $js_settings['paths'][] = $folder_url . '/' . $fid . '.swf';
@@ -288,12 +296,6 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
           $element[$delta] = array(
             '#theme' => 'flexpaper_container'
           );
-          //Check if we have json
-          if (in_array($fid . '.js', $files_arr)) {
-            $js_settings['jsonFiles'][] = $folder_url . '/' . $fid . '.js';
-          }else{
-            $js_settings['jsonFiles'][] = '';
-          }
         }
         else {
           //@TODO Show file link or smth else or maybe remove it at all. Maybe we should add some warning here before link? And file_load($fid) is called twice in tht function
