@@ -43,12 +43,6 @@
                             InitViewMode : Drupal.settings.flexpaper.initViewMode,
                             RenderingOrder : 'flash, html',
 
-                            ViewModeToolsVisible : Drupal.settings.flexpaper.viewModeToolsVisible,
-                            ZoomToolsVisible : Drupal.settings.flexpaper.zoomToolsVisible,
-                            NavToolsVisible : Drupal.settings.flexpaper.navToolsVisible,
-                            CursorToolsVisible : Drupal.settings.flexpaper.cursorToolsVisible,
-                            SearchToolsVisible : Drupal.settings.flexpaper.searchToolsVisible,
-
                             jsDirectory : Drupal.settings.flexpaper.jsDirectory,
 
                             JSONDataType : 'json',
