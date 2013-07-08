@@ -4,13 +4,8 @@
     width:100%;
     height:500px;
 }
-.flexpapaer-switch-link{
-    background-color: #DDDDDD;
-    border-color: #BBBBBB;
-    border-style: solid solid none;
-    border-width: 1px;
-    height: auto;
-    margin-right: 0.5em;
-    padding: 0 1em;
-    text-decoration: none;
+.flexpaper_viewer{
+    position:relative;
+    width:100%;
+    height:100%;
 }

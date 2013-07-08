@@ -267,7 +267,6 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       }
       drupal_add_js($library_path . '/js/flexpaper.js');
       drupal_add_js($library_path . '/js/flexpaper_handlers.js');
-      drupal_add_css($library_path . '/css/flexpaper.css');
       drupal_add_css(drupal_get_path('module', 'flexpaper') . '/css/flexpaper.css');
       drupal_add_js(drupal_get_path('module', 'flexpaper') . '/flexpaper_init.js');
       drupal_add_js(array('flexpaper' => $js_settings), 'setting');
