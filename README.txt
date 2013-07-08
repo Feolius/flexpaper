@@ -19,7 +19,7 @@ REQUIREMENTS
 1. Swftools should be installed on your server, and pdf2swf tool should be available by command line.
 2. To provide correct way to search the text in the split mode your server should also have pdf2json tool installed and
    available by command line.
-2. Your server should support exec() and shell_exec() to run pdf2swf and pdf2json commands.
+3. Your server should support exec() and shell_exec() to run pdf2swf and pdf2json commands.
 
 -----------------------------------------------------------------------------
 LIMITATIONS
