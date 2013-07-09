@@ -5,7 +5,7 @@ pdf reader.
 -----------------------------------------------------------------------------
 VERSION INFO
 -----------------------------------------------------------------------------
-Now this module use only free Flexpaper 2.1.2 version. So, all pdfs are shown only in flash mode. In this mode Flexpaper
+Currently this module use only free Flexpaper 2.1.2 version. So, all pdfs are shown only in flash mode. In this mode Flexpaper
 take the swf file(s) generated from the pdf. Flexpaper module provides generating of swf files using pdf2swf converter
 which is part of Swftools utilities collection (see the installation guide).
 
