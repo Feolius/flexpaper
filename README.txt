@@ -37,3 +37,4 @@ INSTALLATION
 4. Copy flexpaper folder from the current Flexpaper module folder to the libraries folder.
 5. Enable Flexpaper module.
 6. Check admin/config/flexpaper and set proper paths to pdf2swf and pdf2json tools.
+7. (Optional) Check permissions page to allow users to generate SWF files on first node view.
