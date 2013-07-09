@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * @file
+ * Main module file, containing File field formatter, global configuration form functions, formatter configuration
+ * functions and helper functions for conversion pdf files to swf and json.
+ */
 function flexpaper_menu() {
   $items['admin/config/flexpaper'] = array(
     'title' => 'Flexpaper settings',
@@ -15,17 +19,17 @@ function flexpaper_menu() {
 function flexpaper_settings_page_form($form, &$form_state) {
   if (empty($form_state['input'])) {
     if (!flexpaper_pdf2swfEnabled(variable_get('path_to_pdf2swf', 'pdf2swf'))) {
-      drupal_set_message('Path to pdf2swf tool is not properly set', 'warning');
+      drupal_set_message(t('Path to pdf2swf tool is not properly set'), 'warning');
     }
     else {
-      drupal_set_message('Path to pdf2swf tool is working properly, and you don\'t need to set path to it');
+      drupal_set_message(t('Path to pdf2swf tool is working properly, and you don\'t need to set path to it'));
     }
 
     if (!flexpaper_pdf2jsonEnabled(variable_get('path_to_pdf2json', 'pdf2json'))) {
-      drupal_set_message('Path to pdf2json tool is not properly set', 'warning');
+      drupal_set_message(t('Path to pdf2json tool is not properly set', 'warning'));
     }
     else {
-      drupal_set_message('Path to pdf2json tool is working properly, and you don\'t need to set path to it');
+      drupal_set_message(t('Path to pdf2json tool is working properly, and you don\'t need to set path to it'));
     }
   }
   $form['path_to_pdf2swf'] = array(
@@ -52,7 +56,7 @@ function flexpaper_permission() {
   return array(
     'generate swf files' => array(
       'title' => t('Generate swf files'),
-      'description' => t(' Generate swf files from pdf.'),
+      'description' => t('Generate swf files from pdf.'),
     ),
   );
 }
@@ -131,7 +135,7 @@ function flexpaper_field_formatter_settings_form($field, $instance, $view_mode, 
         'easeOut' => t('easeOut'),
         'linear' => t('linear'),
         'easenone' => t('easenone'),
-        'easeInSine'=> t('easeInSine'),
+        'easeInSine' => t('easeInSine'),
         'easeOutQuad' => t('easeOutQuad')
       ),
       '#default_value' => $settings['zoom_transition']
@@ -231,7 +235,7 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
       $js_settings['initViewMode'] = $settings['init_view_mode'];
 
       $library_path = libraries_get_path('flexpaper');
-      $js_settings['jsDirectory'] = $base_url . '/'. $library_path . '/js/';
+      $js_settings['jsDirectory'] = $base_url . '/' . $library_path . '/js/';
       foreach ($status as $fid => $conversion_done) {
         if ($conversion_done) {
           $folder_url = file_create_url('public://flexpaper/' . $fid . '_files');
@@ -241,14 +245,16 @@ function flexpaper_field_formatter_view($entity_type, $entity, $field, $instance
           if (in_array($fid . '.js', $files_arr)) {
             $js_settings['jsonFiles'][] = $folder_url . '/' . $fid . '.js';
             $swf_number = count($files_arr) - 4;
-          }else{
+          }
+          else {
             $js_settings['jsonFiles'][] = '';
             $swf_number = count($files_arr) - 3;
           }
-          if($settings['page_loading_mode'] == 'split'){
+          if ($settings['page_loading_mode'] == 'split') {
 
             $js_settings['paths'][] = $folder_url . '/{' . $fid . '_[*,0].swf,' . $swf_number . '}';
-          }else{
+          }
+          else {
             $js_settings['paths'][] = $folder_url . '/' . $fid . '.swf';
           }
           $element[$delta] = array(
@@ -299,7 +305,8 @@ function flexpaper_check_files_status($files) {
         $files_directory_info[$file->fid] = $files_arr;
         if (in_array($file->fid . '.swf', $files_arr)) {
           $status[$file->fid] = TRUE;
-        }else{
+        }
+        else {
           $status[$file->fid] = FALSE;
         }
       }
@@ -318,28 +325,28 @@ function flexpaper_check_files_status($files) {
 /**
  * Flexpaper processor - Batch API process callback.
  */
-
-function flexpaper_generate_swfs_batch_process($file, &$context){
+function flexpaper_generate_swfs_batch_process($file, &$context) {
   $fid = $file->fid;
   $pdf_path = drupal_realpath($file->uri);
-  $files_directory = drupal_realpath(file_default_scheme() .'://') . '/flexpaper/' . $fid . '_files';
-  if(empty($context['sandbox'])){
+  $files_directory = drupal_realpath(file_default_scheme() . '://') . '/flexpaper/' . $fid . '_files';
+  if (empty($context['sandbox'])) {
     $context['sandbox']['progress'] = 0;
     //@TODO Check if function return proper number of pages
     $pages_number = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri));
-    if($pages_number != 0){
+    if ($pages_number != 0) {
       //It means that our function was able to count number of pages. So, we can show progress info for user
       $context['sandbox']['progress_info'] = TRUE;
       $context['sandbox']['max'] = _flexpaper_get_pdf_pages_number(drupal_realpath($file->uri)) + 1;
       $context['sandbox']['last_swf'] = FALSE;
       $context['sandbox']['error'] = FALSE;
-    }else{
+    }
+    else {
       //We don't have number of pages. We can try to make all operations at row.
       $context['sandbox']['progress_info'] = FALSE;
     }
     file_prepare_directory($files_directory, FILE_CREATE_DIRECTORY);
   }
-  if($context['sandbox']['progress_info']){
+  if ($context['sandbox']['progress_info']) {
     if (!$context['sandbox']['last_swf']) {
       $first_page_number = $context['sandbox']['progress'] + 1;
       $last_page_number = $context['sandbox']['progress'] + 5;
@@ -371,7 +378,8 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
     else {
       $context['finished'] = 1;
     }
-  }else{
+  }
+  else {
     //@TODO Check this codeblock
     $command = variable_get('path_to_pdf2swf', 'pdf2swf') . " '" . $pdf_path . "' -o '" . $files_directory . '/' . $fid . "_%.swf' -f -T 9 -t -s storeallcharacters";
     _flexpaper_exec_conversion_command($command);
@@ -386,7 +394,7 @@ function flexpaper_generate_swfs_batch_process($file, &$context){
 /**
  * Execute conversion command. Return FALSE if there was an error
  */
-function _flexpaper_exec_conversion_command($command){
+function _flexpaper_exec_conversion_command($command) {
   $output = shell_exec($command);
   return _flexpaper_check_error_in_conversion($output);
 }
@@ -394,7 +402,7 @@ function _flexpaper_exec_conversion_command($command){
 /**
  * Check if there was an error in conversion. Return TRUE if error appeared, FALSE otherwise.
  */
-function _flexpaper_check_error_in_conversion($output){
+function _flexpaper_check_error_in_conversion($output) {
   $pattern = '/(FATAL|ERROR)/i';
   preg_match($pattern, $output, $m);
   if (!empty($m)) {
@@ -432,24 +440,24 @@ function theme_flexpaper_view() {
  */
 function _flexpaper_get_pdf_pages_number($filepath) {
   $stream = @fopen($filepath, "r");
-  $PDFContent = @fread($stream, filesize($filepath));
-  $firstValue = 0;
-  $secondValue = 0;
-  if (preg_match("/\/N\s+([0-9]+)/", $PDFContent, $matches)) {
-    $firstValue = $matches[1];
+  $pdf_content = @fread($stream, filesize($filepath));
+  $first_value = 0;
+  $second_value = 0;
+  if (preg_match("/\/N\s+([0-9]+)/", $pdf_content, $matches)) {
+    $first_value = $matches[1];
   }
 
-  if (preg_match_all("/\/Count\s+([0-9]+)/s", $PDFContent, $matches)) {
-    $secondValue = max($matches[1]);
+  if (preg_match_all("/\/Count\s+([0-9]+)/s", $pdf_content, $matches)) {
+    $second_value = max($matches[1]);
   }
-  $max = (($secondValue != 0) ? $secondValue : max($firstValue, $secondValue));
+  $max = (($second_value != 0) ? $second_value : max($first_value, $second_value));
   fclose($stream);
   if ($max == 0) {
     if (extension_loaded('imagick')) {
       try {
         $im = new imagick($filepath);
         $max = $im->getNumberImages();
-      }catch(Exception $ex){
+      } catch (Exception $ex) {
         watchdog('flexpaper', 'Error in attempt to count number of pages using imagick. Exception: %info', array('%info' => $ex->getMessage()), WATCHDOG_ERROR);
       }
     }
@@ -457,48 +465,60 @@ function _flexpaper_get_pdf_pages_number($filepath) {
   return $max;
 }
 
-function flexpaper_pdf2swfEnabled($path_to_pdf2swf){
+function flexpaper_pdf2swfEnabled($path_to_pdf2swf) {
   try {
     if (function_exists('exec') && (DIRECTORY_SEPARATOR == '/' || (DIRECTORY_SEPARATOR == '\\' && $path_to_pdf2swf != 'pdf2swf'))) {
-      if(	PHP_OS == "WIN32" || PHP_OS == "WINNT"	){
+      if (PHP_OS == "WIN32" || PHP_OS == "WINNT") {
         exec('"' . $path_to_pdf2swf . '"' . ' --version 2>&1', $out);
-      }else{
+      }
+      else {
         exec($path_to_pdf2swf . ' --version 2>&1', $out);
       }
       if (empty($out)) {
         return FALSE;
-      } else {
+      }
+      else {
         if (strpos($out[0], 'swftools') !== FALSE) {
           return TRUE;
-        } else {
+        }
+        else {
           return FALSE;
         }
       }
-    } else {
+    }
+    else {
       return FALSE;
     }
-  }catch (Exception $ex) {return FALSE;}
+  } catch (Exception $ex) {
+    return FALSE;
+  }
 }
 
-function flexpaper_pdf2jsonEnabled($path_to_pdf2json){
-  try{
+function flexpaper_pdf2jsonEnabled($path_to_pdf2json) {
+  try {
     if (function_exists('exec') && (DIRECTORY_SEPARATOR == '/' || (DIRECTORY_SEPARATOR == '\\' && $path_to_pdf2json != 'pdf2json'))) {
-      if(	PHP_OS == "WIN32" || PHP_OS == "WINNT"	){
+      if (PHP_OS == "WIN32" || PHP_OS == "WINNT") {
         exec('"' . $path_to_pdf2json . '"' . ' -help 2>&1', $out);
-      }else{
+      }
+      else {
         exec($path_to_pdf2json . ' -help 2>&1', $out);
       }
       if (empty($out)) {
         return FALSE;
-      } else {
+      }
+      else {
         if (strpos($out[0], 'devaldi') !== FALSE) {
           return TRUE;
-        } else {
+        }
+        else {
           return FALSE;
         }
       }
-    } else {
+    }
+    else {
       return FALSE;
     }
-  }catch (Exception $ex) {return FALSE;}
+  } catch (Exception $ex) {
+    return FALSE;
+  }
 }
