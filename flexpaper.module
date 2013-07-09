@@ -4,6 +4,10 @@
  * Main module file, containing File field formatter, global configuration form functions, formatter configuration
  * functions and helper functions for conversion pdf files to swf and json.
  */
+
+/**
+ * Implements hook_menu().
+ */
 function flexpaper_menu() {
   $items['admin/config/flexpaper'] = array(
     'title' => 'Flexpaper settings',
